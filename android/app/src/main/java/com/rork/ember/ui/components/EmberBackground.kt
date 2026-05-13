@@ -25,8 +25,8 @@ fun EmberBackground(modifier: Modifier = Modifier, content: @Composable () -> Un
                 drawRect(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            Color(0x66FF7A2A),
-                            Color(0x22FF7A2A),
+                            EmberColors.GlowTop,
+                            EmberColors.GlowTopMid,
                             Color(0x00000000),
                         ),
                         center = Offset(size.width * 0.5f, -size.height * 0.05f),
@@ -34,11 +34,11 @@ fun EmberBackground(modifier: Modifier = Modifier, content: @Composable () -> Un
                     ),
                     size = Size(size.width, size.height),
                 )
-                // Subtle lower lilac
+                // Subtle lower glow
                 drawRect(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            Color(0x22B28CFF),
+                            EmberColors.GlowBottom,
                             Color(0x00000000),
                         ),
                         center = Offset(size.width * 0.15f, size.height * 1.0f),

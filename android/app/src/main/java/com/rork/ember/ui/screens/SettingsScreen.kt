@@ -55,16 +55,21 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.rork.ember.data.CsvExporter
 import com.rork.ember.data.PremiumPlan
 import com.rork.ember.ui.components.EmberBackground
 import com.rork.ember.ui.theme.EmberColors
+import com.rork.ember.ui.theme.EmberPalettes
+import com.rork.ember.ui.viewmodel.HabitsViewModel
 import com.rork.ember.ui.viewmodel.PremiumViewModel
+import com.rork.ember.ui.viewmodel.ThemeViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -73,11 +78,18 @@ import java.util.Locale
 fun SettingsScreen(
     navController: NavController,
     viewModel: PremiumViewModel = viewModel(),
+    themeVm: ThemeViewModel = viewModel(),
+    habitsVm: HabitsViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val purchasing by viewModel.purchasing.collectAsStateWithLifecycle()
     val justPurchased by viewModel.justPurchased.collectAsStateWithLifecycle()
+    val themeKey by themeVm.current.collectAsStateWithLifecycle()
+    val habits by habitsVm.habits.collectAsStateWithLifecycle()
     val haptics = LocalHapticFeedback.current
+    val context = LocalContext.current
+
+    val currentPalette = remember(themeKey) { EmberPalettes.byKey(themeKey) }
 
     var showCancelSheet by remember { mutableStateOf(false) }
     var toast by remember { mutableStateOf<String?>(null) }
@@ -194,6 +206,52 @@ fun SettingsScreen(
                     ProFeatureRow(Icons.Filled.Palette, "Premium themes", state.isPremium)
                     Divider()
                     ProFeatureRow(Icons.Filled.SaveAlt, "Backup & export", state.isPremium)
+                }
+
+                Spacer(Modifier.height(22.dp))
+
+                // Personalization
+                SectionHeader("Personalization")
+                SettingsGroup {
+                    SettingsRow(
+                        icon = Icons.Filled.Palette,
+                        title = "Theme",
+                        subtitle = currentPalette.displayName + " · " + currentPalette.tagline,
+                        tintAccent = true,
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            navController.navigate("themes")
+                        },
+                    )
+                    Divider()
+                    SettingsRow(
+                        icon = Icons.Filled.SaveAlt,
+                        title = "Export to CSV",
+                        subtitle = if (state.isPremium) {
+                            "" + habits.size + " habits · share or save"
+                        } else "Pro · backup your full history",
+                        onClick = {
+                            when {
+                                !state.isPremium -> {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    navController.navigate("paywall")
+                                }
+                                habits.isEmpty() -> {
+                                    toast = "No habits to export yet"
+                                }
+                                else -> {
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    runCatching {
+                                        val intent = CsvExporter.export(context, habits)
+                                        context.startActivity(intent)
+                                        toast = "Export ready"
+                                    }.onFailure {
+                                        toast = "Export failed"
+                                    }
+                                }
+                            }
+                        },
+                    )
                 }
 
                 Spacer(Modifier.height(22.dp))

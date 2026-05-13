@@ -11,6 +11,7 @@ import com.rork.ember.ui.screens.HabitDetailScreen
 import com.rork.ember.ui.screens.HomeScreen
 import com.rork.ember.ui.screens.PaywallScreen
 import com.rork.ember.ui.screens.SettingsScreen
+import com.rork.ember.ui.screens.ThemePickerScreen
 
 @Composable
 fun AppNavigation() {
@@ -33,6 +34,7 @@ fun AppNavigation() {
         }
         composable("paywall") { PaywallScreen(navController = navController) }
         composable("settings") { SettingsScreen(navController = navController) }
+        composable("themes") { ThemePickerScreen(navController = navController) }
         composable(
             "habit/{habitId}",
             arguments = listOf(navArgument("habitId") { type = NavType.StringType }),
