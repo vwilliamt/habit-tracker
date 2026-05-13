@@ -325,8 +325,12 @@ fun SettingsScreen(
                     Divider()
                     SettingsRow(
                         icon = Icons.Filled.PrivacyTip,
-                        title = "Privacy policy",
-                        onClick = { toast = "Opens privacy policy" },
+                        title = "Privacy",
+                        subtitle = "How Ember handles your data",
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            navController.navigate("privacy")
+                        },
                     )
                     Divider()
                     SettingsRow(
