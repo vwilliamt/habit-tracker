@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Notifications
@@ -63,6 +64,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.rork.ember.data.CsvExporter
+import com.rork.ember.data.JsonExporter
 import com.rork.ember.data.PremiumPlan
 import com.rork.ember.ui.components.EmberBackground
 import com.rork.ember.ui.theme.EmberColors
@@ -228,7 +230,7 @@ fun SettingsScreen(
                         icon = Icons.Filled.SaveAlt,
                         title = "Export to CSV",
                         subtitle = if (state.isPremium) {
-                            "" + habits.size + " habits · share or save"
+                            "" + habits.size + " habits · spreadsheet-ready"
                         } else "Pro · backup your full history",
                         onClick = {
                             when {
@@ -244,7 +246,36 @@ fun SettingsScreen(
                                     runCatching {
                                         val intent = CsvExporter.export(context, habits)
                                         context.startActivity(intent)
-                                        toast = "Export ready"
+                                        toast = "CSV ready"
+                                    }.onFailure {
+                                        toast = "Export failed"
+                                    }
+                                }
+                            }
+                        },
+                    )
+                    Divider()
+                    SettingsRow(
+                        icon = Icons.Filled.DataObject,
+                        title = "Export to JSON",
+                        subtitle = if (state.isPremium) {
+                            "Full backup · re-import friendly"
+                        } else "Pro · developer-friendly backup",
+                        onClick = {
+                            when {
+                                !state.isPremium -> {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    navController.navigate("paywall")
+                                }
+                                habits.isEmpty() -> {
+                                    toast = "No habits to export yet"
+                                }
+                                else -> {
+                                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    runCatching {
+                                        val intent = JsonExporter.export(context, habits)
+                                        context.startActivity(intent)
+                                        toast = "JSON ready"
                                     }.onFailure {
                                         toast = "Export failed"
                                     }

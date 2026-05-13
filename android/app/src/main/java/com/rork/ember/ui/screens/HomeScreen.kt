@@ -92,6 +92,7 @@ fun HomeScreen(
                         isPremium = premium.isPremium,
                         onProTap = { navController.navigate("paywall") },
                         onSettingsTap = { navController.navigate("settings") },
+                        onThemeTap = { navController.navigate("themes") },
                     )
                 }
                 item { Spacer(Modifier.height(4.dp)) }
@@ -215,6 +216,7 @@ private fun Header(
     isPremium: Boolean,
     onProTap: () -> Unit,
     onSettingsTap: () -> Unit,
+    onThemeTap: () -> Unit,
 ) {
     val doneToday = habits.count { it.isDoneOn(today) }
     val total = habits.size.coerceAtLeast(1)
@@ -241,6 +243,8 @@ private fun Header(
                 Spacer(Modifier.width(10.dp))
                 ProPill(isPremium = isPremium, onClick = onProTap)
                 Spacer(Modifier.weight(1f))
+                ThemeSwatchChip(onClick = onThemeTap)
+                Spacer(Modifier.width(8.dp))
                 Box(
                     modifier = Modifier
                         .size(34.dp)
@@ -300,6 +304,31 @@ private fun Header(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun ThemeSwatchChip(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(34.dp)
+            .clip(CircleShape)
+            .background(EmberColors.SurfaceElevated)
+            .border(1.dp, Color(0x22FFFFFF), CircleShape)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(18.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.linearGradient(
+                        listOf(EmberColors.Primary, EmberColors.Accent)
+                    )
+                )
+                .border(1.dp, Color(0x55FFFFFF), CircleShape),
+        )
     }
 }
 
