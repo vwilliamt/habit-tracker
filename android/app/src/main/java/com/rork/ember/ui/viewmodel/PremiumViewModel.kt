@@ -49,4 +49,10 @@ class PremiumViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun acknowledgePurchase() { _justPurchased.value = false }
+
+    fun cancelSubscription() {
+        viewModelScope.launch {
+            repo.clear()
+        }
+    }
 }

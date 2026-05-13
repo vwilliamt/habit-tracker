@@ -29,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Icon
@@ -90,6 +91,7 @@ fun HomeScreen(
                         today = today,
                         isPremium = premium.isPremium,
                         onProTap = { navController.navigate("paywall") },
+                        onSettingsTap = { navController.navigate("settings") },
                     )
                 }
                 item { Spacer(Modifier.height(4.dp)) }
@@ -212,6 +214,7 @@ private fun Header(
     today: LocalDate,
     isPremium: Boolean,
     onProTap: () -> Unit,
+    onSettingsTap: () -> Unit,
 ) {
     val doneToday = habits.count { it.isDoneOn(today) }
     val total = habits.size.coerceAtLeast(1)
@@ -237,6 +240,23 @@ private fun Header(
                 )
                 Spacer(Modifier.width(10.dp))
                 ProPill(isPremium = isPremium, onClick = onProTap)
+                Spacer(Modifier.weight(1f))
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(EmberColors.SurfaceElevated)
+                        .border(1.dp, Color(0x22FFFFFF), CircleShape)
+                        .clickable { onSettingsTap() },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Filled.Settings,
+                        contentDescription = "Settings",
+                        tint = EmberColors.TextSecondary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
             }
             Spacer(Modifier.height(6.dp))
             Text(
