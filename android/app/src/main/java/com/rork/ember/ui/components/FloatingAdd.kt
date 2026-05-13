@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.runtime.Composable
@@ -29,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.rork.ember.ui.theme.EmberColors
 
 @Composable
-fun FloatingAdd(onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun FloatingAdd(onClick: () -> Unit, modifier: Modifier = Modifier, locked: Boolean = false) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.92f else 1f, label = "fabScale")
@@ -54,10 +55,10 @@ fun FloatingAdd(onClick: () -> Unit, modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center,
     ) {
         Icon(
-            imageVector = Icons.Filled.Add,
-            contentDescription = "Add habit",
+            imageVector = if (locked) Icons.Filled.Lock else Icons.Filled.Add,
+            contentDescription = if (locked) "Unlock more habits" else "Add habit",
             tint = Color(0xFF1A0E07),
-            modifier = Modifier.size(28.dp),
+            modifier = Modifier.size(if (locked) 24.dp else 28.dp),
         )
     }
 }

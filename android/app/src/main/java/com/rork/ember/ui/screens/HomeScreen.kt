@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.rork.ember.data.FreeTier
 import com.rork.ember.data.Habit
 import com.rork.ember.ui.components.EmberBackground
 import com.rork.ember.ui.components.FloatingAdd
@@ -55,6 +57,7 @@ import com.rork.ember.ui.components.HabitCard
 import com.rork.ember.ui.components.ProgressRing
 import com.rork.ember.ui.theme.EmberColors
 import com.rork.ember.ui.viewmodel.HabitsViewModel
+import com.rork.ember.ui.viewmodel.PremiumViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -63,10 +66,13 @@ import java.util.Locale
 fun HomeScreen(
     navController: NavController,
     viewModel: HabitsViewModel = viewModel(),
+    premiumViewModel: PremiumViewModel = viewModel(),
 ) {
     val habits by viewModel.habits.collectAsStateWithLifecycle()
+    val premium by premiumViewModel.state.collectAsStateWithLifecycle()
     val today = LocalDate.now()
     var reorderMode by remember { mutableStateOf(false) }
+    val atFreeLimit = !premium.isPremium && habits.size >= FreeTier.MAX_HABITS
 
     // If list empties out, exit reorder mode automatically.
     if (habits.isEmpty() && reorderMode) reorderMode = false
@@ -78,7 +84,14 @@ fun HomeScreen(
                 contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 56.dp, bottom = 140.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                item { Header(habits = habits, today = today) }
+                item {
+                    Header(
+                        habits = habits,
+                        today = today,
+                        isPremium = premium.isPremium,
+                        onProTap = { navController.navigate("paywall") },
+                    )
+                }
                 item { Spacer(Modifier.height(4.dp)) }
                 item {
                     SectionLabel(
@@ -92,7 +105,12 @@ fun HomeScreen(
                 }
 
                 if (habits.isEmpty()) {
-                    item { EmptyState(onAdd = { navController.navigate("add") }) }
+                    item {
+                        EmptyState(onAdd = {
+                            if (atFreeLimit) navController.navigate("paywall")
+                            else navController.navigate("add")
+                        })
+                    }
                 } else {
                     items(items = habits, key = { it.id }) { habit ->
                         val idx = habits.indexOf(habit)
@@ -118,6 +136,17 @@ fun HomeScreen(
                         }
                     }
                 }
+
+                if (!premium.isPremium && habits.isNotEmpty()) {
+                    item { Spacer(Modifier.height(6.dp)) }
+                    item {
+                        UpgradeCard(
+                            habitCount = habits.size,
+                            limit = FreeTier.MAX_HABITS,
+                            onTap = { navController.navigate("paywall") },
+                        )
+                    }
+                }
             }
 
             if (reorderMode) {
@@ -129,7 +158,11 @@ fun HomeScreen(
                 )
             } else {
                 FloatingAdd(
-                    onClick = { navController.navigate("add") },
+                    onClick = {
+                        if (atFreeLimit) navController.navigate("paywall")
+                        else navController.navigate("add")
+                    },
+                    locked = atFreeLimit,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(end = 22.dp, bottom = 32.dp),
@@ -174,7 +207,12 @@ private fun DoneReorderButton(onClick: () -> Unit, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun Header(habits: List<Habit>, today: LocalDate) {
+private fun Header(
+    habits: List<Habit>,
+    today: LocalDate,
+    isPremium: Boolean,
+    onProTap: () -> Unit,
+) {
     val doneToday = habits.count { it.isDoneOn(today) }
     val total = habits.size.coerceAtLeast(1)
     val progress = doneToday.toFloat() / total
@@ -190,13 +228,17 @@ private fun Header(habits: List<Habit>, today: LocalDate) {
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = dateText.uppercase(Locale.getDefault()),
-                style = MaterialTheme.typography.labelSmall,
-                color = EmberColors.Primary,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = dateText.uppercase(Locale.getDefault()),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = EmberColors.Primary,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.width(10.dp))
+                ProPill(isPremium = isPremium, onClick = onProTap)
+            }
+            Spacer(Modifier.height(6.dp))
             Text(
                 text = greeting,
                 style = MaterialTheme.typography.displayMedium,
@@ -296,6 +338,122 @@ private fun SectionLabel(
                     style = MaterialTheme.typography.labelSmall,
                     color = if (reorderMode) EmberColors.TextPrimary else EmberColors.TextSecondary,
                     fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProPill(isPremium: Boolean, onClick: () -> Unit) {
+    val bg = if (isPremium) Brush.linearGradient(
+        listOf(EmberColors.Accent, EmberColors.Primary)
+    ) else Brush.linearGradient(
+        listOf(EmberColors.SurfaceHigh, EmberColors.SurfaceElevated)
+    )
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(bg)
+            .border(
+                1.dp,
+                if (isPremium) Color(0x66FFFFFF) else Color(0x22FFFFFF),
+                RoundedCornerShape(50),
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Filled.WorkspacePremium,
+                contentDescription = null,
+                tint = if (isPremium) Color(0xFF1A0E07) else EmberColors.Accent,
+                modifier = Modifier.size(12.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(
+                if (isPremium) "PRO" else "GET PRO",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isPremium) Color(0xFF1A0E07) else EmberColors.Accent,
+                fontWeight = FontWeight.Black,
+            )
+        }
+    }
+}
+
+@Composable
+private fun UpgradeCard(habitCount: Int, limit: Int, onTap: () -> Unit) {
+    val remaining = (limit - habitCount).coerceAtLeast(0)
+    val atLimit = habitCount >= limit
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                Brush.linearGradient(
+                    listOf(
+                        EmberColors.Accent.copy(alpha = 0.22f),
+                        EmberColors.Primary.copy(alpha = 0.12f),
+                        EmberColors.SurfaceElevated,
+                    )
+                )
+            )
+            .border(1.dp, EmberColors.Accent.copy(alpha = 0.4f), RoundedCornerShape(24.dp))
+            .clickable { onTap() }
+            .padding(horizontal = 18.dp, vertical = 16.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(EmberColors.Accent, EmberColors.Primary)
+                        )
+                    )
+                    .border(1.dp, Color(0x55FFFFFF), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Filled.WorkspacePremium,
+                    contentDescription = null,
+                    tint = Color(0xFF1A0E07),
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    if (atLimit) "Free limit reached" else "Unlock Ember Pro",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = EmberColors.TextPrimary,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    if (atLimit) "Upgrade for unlimited habits, widgets, AI insights & more."
+                    else "$remaining of $limit free habits left · widgets, sync, AI insights",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = EmberColors.TextSecondary,
+                )
+            }
+            Spacer(Modifier.width(10.dp))
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(50))
+                    .background(
+                        Brush.linearGradient(
+                            listOf(EmberColors.Accent, EmberColors.Primary)
+                        )
+                    )
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+            ) {
+                Text(
+                    "Upgrade",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color(0xFF1A0E07),
+                    fontWeight = FontWeight.Bold,
                 )
             }
         }
