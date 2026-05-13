@@ -168,7 +168,15 @@ fun HabitDetailScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            SectionTitle("This week")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                SectionTitle("This week")
+                Spacer(Modifier.weight(1f))
+                Text(
+                    "Long-press a day to toggle",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = EmberColors.TextMuted,
+                )
+            }
             Spacer(Modifier.height(12.dp))
             Box(
                 modifier = Modifier
@@ -180,7 +188,17 @@ fun HabitDetailScreen(
                     .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(22.dp))
                     .padding(horizontal = 12.dp, vertical = 18.dp),
             ) {
-                WeekStrip(today = today, days = week, accent = accent)
+                WeekStrip(
+                    today = today,
+                    days = week,
+                    accent = accent,
+                    onLongPressDay = { date ->
+                        if (!date.isAfter(today)) {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.toggleDay(habit.id, date)
+                        }
+                    },
+                )
             }
 
             Spacer(Modifier.height(20.dp))
@@ -197,7 +215,16 @@ fun HabitDetailScreen(
                     .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(22.dp))
                     .padding(20.dp),
             ) {
-                MonthGrid(days = grid, accent = accent)
+                MonthGrid(
+                    days = grid,
+                    accent = accent,
+                    onLongPressDay = { date ->
+                        if (!date.isAfter(today)) {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.toggleDay(habit.id, date)
+                        }
+                    },
+                )
             }
 
             Spacer(Modifier.height(28.dp))

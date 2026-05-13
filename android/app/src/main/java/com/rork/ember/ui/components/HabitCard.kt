@@ -4,11 +4,12 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,10 +22,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material3.Icon
-import androidx.compose.foundation.LocalIndication
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,12 +37,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,13 +58,19 @@ fun HabitCard(
     today: LocalDate,
     onToggle: () -> Unit,
     onOpen: () -> Unit,
+    onLongPress: () -> Unit = {},
+    reorderMode: Boolean = false,
+    canMoveUp: Boolean = false,
+    canMoveDown: Boolean = false,
+    onMoveUp: () -> Unit = {},
+    onMoveDown: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val accent = Color(habit.colorHex)
     val isDone = habit.isDoneOn(today)
     val streak = habit.currentStreak(today)
     val weeklyDone = habit.recentDays(today, 7).count { it.second }
-    val weeklyProgress = (weeklyDone.toFloat() / habit.targetDaysPerWeek.coerceAtLeast(1)).coerceIn(0f, 1f)
+    val haptics = LocalHapticFeedback.current
 
     var bumpKey by remember { mutableStateOf(0) }
     val scale by animateFloatAsState(
@@ -88,6 +98,18 @@ fun HabitCard(
         )
     }
 
+    val borderBrush = when {
+        reorderMode -> Brush.linearGradient(
+            listOf(EmberColors.Accent.copy(alpha = 0.7f), EmberColors.Primary.copy(alpha = 0.3f))
+        )
+        isDone -> Brush.linearGradient(
+            listOf(accent.copy(alpha = 0.6f), accent.copy(alpha = 0.05f))
+        )
+        else -> Brush.linearGradient(
+            listOf(Color(0x22FFFFFF), Color(0x06FFFFFF))
+        )
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -95,19 +117,26 @@ fun HabitCard(
             .clip(RoundedCornerShape(26.dp))
             .background(gradient)
             .border(
-                width = 1.dp,
-                brush = Brush.linearGradient(
-                    colors = if (isDone)
-                        listOf(accent.copy(alpha = 0.6f), accent.copy(alpha = 0.05f))
-                    else
-                        listOf(Color(0x22FFFFFF), Color(0x06FFFFFF)),
-                ),
+                width = if (reorderMode) 1.5.dp else 1.dp,
+                brush = borderBrush,
                 shape = RoundedCornerShape(26.dp),
             )
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = LocalIndication.current,
-                onClick = onOpen,
+            .then(
+                if (reorderMode) Modifier
+                else Modifier
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = LocalIndication.current,
+                        onClick = onOpen,
+                    )
+                    .pointerInput(habit.id) {
+                        detectTapGestures(
+                            onLongPress = {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onLongPress()
+                            },
+                        )
+                    }
             )
             .padding(16.dp)
             .animateContentSize(),
@@ -169,15 +198,70 @@ fun HabitCard(
                 }
             }
             Spacer(Modifier.width(12.dp))
-            CheckPuck(
-                isDone = isDone,
-                accent = accent,
-                onClick = onToggle,
-            )
+            if (reorderMode) {
+                ReorderControls(
+                    canMoveUp = canMoveUp,
+                    canMoveDown = canMoveDown,
+                    onMoveUp = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onMoveUp()
+                    },
+                    onMoveDown = {
+                        haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onMoveDown()
+                    },
+                )
+            } else {
+                CheckPuck(
+                    isDone = isDone,
+                    accent = accent,
+                    onClick = onToggle,
+                )
+            }
         }
+    }
+}
 
-        Spacer(Modifier.height(14.dp))
-        Spacer(Modifier.height(2.dp))
+@Composable
+private fun ReorderControls(
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        ArrowButton(
+            up = true,
+            enabled = canMoveUp,
+            onClick = onMoveUp,
+        )
+        Spacer(Modifier.height(6.dp))
+        ArrowButton(
+            up = false,
+            enabled = canMoveDown,
+            onClick = onMoveDown,
+        )
+    }
+}
+
+@Composable
+private fun ArrowButton(up: Boolean, enabled: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .alpha(if (enabled) 1f else 0.35f)
+            .clip(CircleShape)
+            .background(EmberColors.SurfaceHigh)
+            .border(1.dp, Color(0x33FFFFFF), CircleShape)
+            .clickable(enabled = enabled) { onClick() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = if (up) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+            contentDescription = if (up) "Move up" else "Move down",
+            tint = EmberColors.TextPrimary,
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
@@ -223,7 +307,7 @@ private fun CheckPuck(
     ) {
         if (isDone) {
             Icon(
-                imageVector = androidx.compose.material.icons.Icons.Filled.Check,
+                imageVector = Icons.Filled.Check,
                 contentDescription = "Done",
                 tint = Color(0xFF1A0E07),
                 modifier = Modifier.size(28.dp),

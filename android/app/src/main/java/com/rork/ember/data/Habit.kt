@@ -13,6 +13,8 @@ data class Habit(
     val createdEpochDay: Long,
     val targetDaysPerWeek: Int = 7,
     val completions: Set<Long> = emptySet(),
+    /** Minutes from midnight (0..1439). null = no reminder. */
+    val reminderMinutes: Int? = null,
 ) {
     fun isDoneOn(day: LocalDate): Boolean = completions.contains(day.toEpochDay())
 

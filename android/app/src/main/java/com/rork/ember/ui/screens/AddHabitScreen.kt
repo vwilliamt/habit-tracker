@@ -26,10 +26,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -50,6 +56,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -61,6 +68,14 @@ import com.rork.ember.ui.viewmodel.HabitsViewModel
 private val EmojiOptions = listOf(
     "🔥", "🧘", "📖", "🏋️", "💧", "🏃", "🥗", "🧠", "🎨", "🎸", "💻", "🌱",
     "✍️", "☕", "🌅", "🌙", "🧹", "💤", "🚶", "🚴", "🛁", "💊", "🪷", "📝",
+)
+
+private val ReminderPresets = listOf(
+    420,  // 07:00
+    480,  // 08:00
+    720,  // 12:00
+    1080, // 18:00
+    1260, // 21:00
 )
 
 @Composable
@@ -78,6 +93,10 @@ fun AddHabitScreen(
         mutableLongStateOf(editing?.colorHex ?: HabitPalette.first())
     }
     var target by rememberSaveable { mutableIntStateOf(editing?.targetDaysPerWeek ?: 7) }
+    var reminderMinutes by rememberSaveable {
+        mutableStateOf<Int?>(editing?.reminderMinutes)
+    }
+    var showTimePicker by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
 
     LaunchedEffect(editing?.id) {
@@ -86,6 +105,7 @@ fun AddHabitScreen(
             emoji = editing.emoji
             colorHex = editing.colorHex
             target = editing.targetDaysPerWeek
+            reminderMinutes = editing.reminderMinutes
         }
     }
 
@@ -299,6 +319,66 @@ fun AddHabitScreen(
                 }
             }
 
+            Spacer(Modifier.height(22.dp))
+
+            // Reminder section
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                FieldLabel("Reminder")
+                Spacer(Modifier.weight(1f))
+                if (reminderMinutes != null) {
+                    Text(
+                        text = "Daily at ${formatMinutes(reminderMinutes!!)}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = accent,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(vertical = 4.dp),
+            ) {
+                item {
+                    ReminderChip(
+                        label = "Off",
+                        leadingIcon = Icons.Filled.NotificationsOff,
+                        selected = reminderMinutes == null,
+                        accent = accent,
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            reminderMinutes = null
+                        },
+                    )
+                }
+                items(count = ReminderPresets.size, key = { ReminderPresets[it] }) { idx ->
+                    val m = ReminderPresets[idx]
+                    ReminderChip(
+                        label = formatMinutes(m),
+                        leadingIcon = null,
+                        selected = reminderMinutes == m,
+                        accent = accent,
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            reminderMinutes = m
+                        },
+                    )
+                }
+                item {
+                    val custom = reminderMinutes != null && reminderMinutes !in ReminderPresets
+                    ReminderChip(
+                        label = if (custom) "Custom · ${formatMinutes(reminderMinutes!!)}" else "Custom…",
+                        leadingIcon = Icons.Filled.NotificationsActive,
+                        selected = custom,
+                        accent = accent,
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            showTimePicker = true
+                        },
+                    )
+                }
+            }
+
             Spacer(Modifier.height(40.dp))
 
             Box(
@@ -316,9 +396,9 @@ fun AddHabitScreen(
                     .clickable(enabled = name.isNotBlank()) {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         if (editing != null) {
-                            viewModel.updateHabit(editing.id, name.trim(), emoji, colorHex, target)
+                            viewModel.updateHabit(editing.id, name.trim(), emoji, colorHex, target, reminderMinutes)
                         } else {
-                            viewModel.addHabit(name.trim(), emoji, colorHex, target)
+                            viewModel.addHabit(name.trim(), emoji, colorHex, target, reminderMinutes)
                         }
                         navController.popBackStack()
                     },
@@ -342,6 +422,155 @@ fun AddHabitScreen(
             }
         }
     }
+
+    if (showTimePicker) {
+        ReminderTimeDialog(
+            initialMinutes = reminderMinutes ?: 480,
+            onDismiss = { showTimePicker = false },
+            onConfirm = { mins ->
+                reminderMinutes = mins
+                showTimePicker = false
+            },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReminderTimeDialog(
+    initialMinutes: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit,
+) {
+    val state = rememberTimePickerState(
+        initialHour = (initialMinutes / 60).coerceIn(0, 23),
+        initialMinute = (initialMinutes % 60).coerceIn(0, 59),
+        is24Hour = false,
+    )
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = EmberColors.SurfaceElevated,
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    "Set reminder",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = EmberColors.TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(Modifier.height(16.dp))
+                TimePicker(state = state)
+                Spacer(Modifier.height(12.dp))
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(EmberColors.Surface)
+                            .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(50))
+                            .clickable { onDismiss() },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            "Cancel",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = EmberColors.TextSecondary,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(46.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(EmberColors.Accent, EmberColors.Primary)
+                                )
+                            )
+                            .clickable {
+                                onConfirm(state.hour * 60 + state.minute)
+                            },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            "Set",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = Color(0xFF1A0E07),
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReminderChip(
+    label: String,
+    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector?,
+    selected: Boolean,
+    accent: Color,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .height(40.dp)
+            .clip(RoundedCornerShape(50))
+            .background(
+                if (selected) Brush.linearGradient(
+                    listOf(accent.copy(alpha = 0.5f), accent.copy(alpha = 0.18f))
+                ) else Brush.linearGradient(
+                    listOf(EmberColors.SurfaceElevated, EmberColors.Surface)
+                )
+            )
+            .border(
+                1.dp,
+                if (selected) accent else Color(0x22FFFFFF),
+                RoundedCornerShape(50),
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 14.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (leadingIcon != null) {
+                Icon(
+                    leadingIcon,
+                    contentDescription = null,
+                    tint = if (selected) EmberColors.TextPrimary else EmberColors.TextSecondary,
+                    modifier = Modifier.size(14.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+            }
+            Text(
+                label,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (selected) EmberColors.TextPrimary else EmberColors.TextSecondary,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
+}
+
+private fun formatMinutes(m: Int): String {
+    val h = m / 60
+    val mm = m % 60
+    val hour12 = when {
+        h == 0 -> 12
+        h > 12 -> h - 12
+        else -> h
+    }
+    val ampm = if (h < 12) "AM" else "PM"
+    val mmStr = if (mm < 10) "0$mm" else "$mm"
+    return "$hour12:$mmStr $ampm"
 }
 
 @Composable

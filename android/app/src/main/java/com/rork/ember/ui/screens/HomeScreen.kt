@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,12 +27,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,7 +53,6 @@ import com.rork.ember.ui.components.EmberBackground
 import com.rork.ember.ui.components.FloatingAdd
 import com.rork.ember.ui.components.HabitCard
 import com.rork.ember.ui.components.ProgressRing
-import com.rork.ember.ui.components.WeekStrip
 import com.rork.ember.ui.theme.EmberColors
 import com.rork.ember.ui.viewmodel.HabitsViewModel
 import java.time.LocalDate
@@ -61,6 +66,10 @@ fun HomeScreen(
 ) {
     val habits by viewModel.habits.collectAsStateWithLifecycle()
     val today = LocalDate.now()
+    var reorderMode by remember { mutableStateOf(false) }
+
+    // If list empties out, exit reorder mode automatically.
+    if (habits.isEmpty() && reorderMode) reorderMode = false
 
     EmberBackground {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -73,8 +82,12 @@ fun HomeScreen(
                 item { Spacer(Modifier.height(4.dp)) }
                 item {
                     SectionLabel(
-                        text = "Today",
-                        trailing = "${habits.count { it.isDoneOn(today) }} of ${habits.size}",
+                        text = if (reorderMode) "Reorder" else "Today",
+                        trailing = if (reorderMode) "Long-press a card to undo • drag arrows"
+                        else "${habits.count { it.isDoneOn(today) }} of ${habits.size}",
+                        reorderMode = reorderMode,
+                        canToggleReorder = habits.size >= 2,
+                        onToggleReorder = { reorderMode = !reorderMode },
                     )
                 }
 
@@ -82,6 +95,7 @@ fun HomeScreen(
                     item { EmptyState(onAdd = { navController.navigate("add") }) }
                 } else {
                     items(items = habits, key = { it.id }) { habit ->
+                        val idx = habits.indexOf(habit)
                         AnimatedVisibility(
                             visible = true,
                             enter = fadeIn(tween(300)) + slideInVertically(tween(300)) { it / 4 },
@@ -92,17 +106,68 @@ fun HomeScreen(
                                 today = today,
                                 onToggle = { viewModel.toggleToday(habit.id) },
                                 onOpen = { navController.navigate("habit/${habit.id}") },
+                                onLongPress = {
+                                    if (!reorderMode && habits.size >= 2) reorderMode = true
+                                },
+                                reorderMode = reorderMode,
+                                canMoveUp = idx > 0,
+                                canMoveDown = idx >= 0 && idx < habits.size - 1,
+                                onMoveUp = { viewModel.moveHabit(idx, idx - 1) },
+                                onMoveDown = { viewModel.moveHabit(idx, idx + 1) },
                             )
                         }
                     }
                 }
             }
 
-            FloatingAdd(
-                onClick = { navController.navigate("add") },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 22.dp, bottom = 32.dp),
+            if (reorderMode) {
+                DoneReorderButton(
+                    onClick = { reorderMode = false },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 36.dp),
+                )
+            } else {
+                FloatingAdd(
+                    onClick = { navController.navigate("add") },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 22.dp, bottom = 32.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DoneReorderButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .height(54.dp)
+            .clip(RoundedCornerShape(50))
+            .background(
+                Brush.linearGradient(
+                    listOf(EmberColors.Accent, EmberColors.Primary, EmberColors.PrimaryDeep)
+                )
+            )
+            .border(1.dp, Color(0x55FFFFFF), RoundedCornerShape(50))
+            .clickable { onClick() }
+            .padding(horizontal = 26.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Filled.Done,
+                contentDescription = null,
+                tint = Color(0xFF1A0E07),
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "Done reordering",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color(0xFF1A0E07),
+                fontWeight = FontWeight.Bold,
             )
         }
     }
@@ -177,7 +242,13 @@ private fun Header(habits: List<Habit>, today: LocalDate) {
 }
 
 @Composable
-private fun SectionLabel(text: String, trailing: String) {
+private fun SectionLabel(
+    text: String,
+    trailing: String,
+    reorderMode: Boolean,
+    canToggleReorder: Boolean,
+    onToggleReorder: () -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -192,16 +263,41 @@ private fun SectionLabel(text: String, trailing: String) {
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
-                .background(EmberColors.SurfaceHigh)
-                .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(50))
-                .padding(horizontal = 10.dp, vertical = 4.dp),
+                .background(
+                    if (reorderMode) Brush.linearGradient(
+                        listOf(EmberColors.Accent.copy(alpha = 0.3f), EmberColors.Primary.copy(alpha = 0.15f))
+                    ) else Brush.linearGradient(
+                        listOf(EmberColors.SurfaceHigh, EmberColors.SurfaceHigh)
+                    )
+                )
+                .border(
+                    1.dp,
+                    if (reorderMode) EmberColors.Accent.copy(alpha = 0.6f) else Color(0x22FFFFFF),
+                    RoundedCornerShape(50),
+                )
+                .then(
+                    if (canToggleReorder) Modifier.clickable { onToggleReorder() }
+                    else Modifier
+                )
+                .padding(horizontal = 10.dp, vertical = 6.dp),
         ) {
-            Text(
-                text = trailing,
-                style = MaterialTheme.typography.labelSmall,
-                color = EmberColors.TextSecondary,
-                fontWeight = FontWeight.SemiBold,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (canToggleReorder) {
+                    Icon(
+                        Icons.Filled.SwapVert,
+                        contentDescription = null,
+                        tint = if (reorderMode) EmberColors.Accent else EmberColors.TextSecondary,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                }
+                Text(
+                    text = trailing,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (reorderMode) EmberColors.TextPrimary else EmberColors.TextSecondary,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
         }
     }
 }
@@ -218,6 +314,7 @@ private fun EmptyState(onAdd: () -> Unit) {
                 )
             )
             .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(28.dp))
+            .clickable { onAdd() }
             .padding(24.dp),
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -256,9 +353,6 @@ private fun EmptyState(onAdd: () -> Unit) {
                     )
                 }
             }
-            Spacer(Modifier.height(2.dp))
         }
     }
-    // make whole card tappable
-    Spacer(Modifier.height(0.dp))
 }
