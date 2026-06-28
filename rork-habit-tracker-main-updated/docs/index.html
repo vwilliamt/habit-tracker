@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ember — Habit Tracker</title>
+<style>
+  :root {
+    --bg: #14100c; --surface-elevated: #251c15;
+    --text-primary: #f5ece1; --text-secondary: #c7b8a8;
+    --accent: #ff9d3d; --primary: #ff6a1f; --primary-deep: #b8410f;
+    --border: rgba(255, 255, 255, 0.08);
+  }
+  body { margin: 0; background: var(--bg); color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .card { text-align: center; padding: 48px; max-width: 480px; }
+  .logo { width: 64px; height: 64px; margin: 0 auto 20px; border-radius: 18px;
+    background: linear-gradient(135deg, var(--accent), var(--primary), var(--primary-deep));
+    display: flex; align-items: center; justify-content: center; font-size: 32px; }
+  h1 { margin: 0 0 8px; font-size: 26px; }
+  p { color: var(--text-secondary); margin: 0 0 28px; }
+  .links { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  a.btn { color: var(--text-primary); background: var(--surface-elevated);
+    border: 1px solid var(--border); border-radius: 50px; padding: 10px 20px;
+    text-decoration: none; font-size: 14px; }
+  a.btn:hover { border-color: var(--accent); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">🔥</div>
+    <h1>Ember</h1>
+    <p>Build habits that stick. Streaks, insights, reminders, themes.</p>
+    <div class="links">
+      <a class="btn" href="./privacy-policy.html">Privacy Policy</a>
+      <a class="btn" href="./terms-of-service.html">Terms of Service</a>
+      <a class="btn" href="mailto:support@ember.app">Contact</a>
+    </div>
+  </div>
+</body>
+</html>
