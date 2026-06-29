@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ember — Privacy Policy</title>
+<meta name="description" content="Privacy Policy for the Ember habit tracker app." />
+<style>
+  :root {
+    --bg: #14100c;
+    --surface: #1d1712;
+    --surface-elevated: #251c15;
+    --text-primary: #f5ece1;
+    --text-secondary: #c7b8a8;
+    --text-muted: #8a7a6a;
+    --accent: #ff9d3d;
+    --primary: #ff6a1f;
+    --primary-deep: #b8410f;
+    --border: rgba(255, 255, 255, 0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.65;
+  }
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--primary), var(--primary-deep));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  header h1 {
+    font-size: 20px;
+    margin: 0;
+    font-weight: 700;
+  }
+  .updated {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin: 0 0 32px;
+  }
+  .tldr {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin-bottom: 36px;
+  }
+  .tldr h2 {
+    margin-top: 0;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+  }
+  .tldr ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+  .tldr li { margin-bottom: 6px; color: var(--text-secondary); }
+  h2.section {
+    font-size: 18px;
+    margin: 40px 0 12px;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+  h3 {
+    font-size: 15px;
+    margin: 20px 0 8px;
+    color: var(--accent);
+  }
+  p, li { color: var(--text-secondary); }
+  ul { padding-left: 20px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .contact {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin-top: 40px;
+    text-align: center;
+  }
+  .contact a { font-weight: 600; font-size: 16px; }
+  footer {
+    margin-top: 48px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  code {
+    background: var(--surface-elevated);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">🔥</div>
+      <h1>Ember — Privacy Policy</h1>
+    </header>
+    <p class="updated">Last updated: June 27, 2026</p>
+
+    <p>Ember ("we", "us", "our") builds the Ember habit tracker app ("the App"). This Privacy Policy explains what data the App collects, why, and how it is handled. By using Ember you agree to this policy.</p>
+
+    <div class="tldr">
+      <h2>TL;DR</h2>
+      <ul>
+        <li>Ember stores your habits, check-ins, settings, and reminders <strong>locally on your device</strong> by default.</li>
+        <li>We do <strong>not</strong> sell your data.</li>
+        <li>The <strong>free tier shows ads</strong> (via Google AdMob) to keep Ember free to use — <strong>Ember Pro removes all ads</strong>.</li>
+        <li>We do <strong>not</strong> use any third-party analytics SDKs.</li>
+        <li>Optional features (AI insights, cloud sync) send only the minimum data required, over HTTPS, and only when you use them.</li>
+      </ul>
+    </div>
+
+    <h2 class="section">1. Data we collect</h2>
+
+    <h3>1a. Data stored on your device (always)</h3>
+    <p>The following data is created by you and stored locally on your device using Android's app storage. It is not transmitted to us unless you opt into an optional feature listed below.</p>
+    <ul>
+      <li>Habit names, icons, colors, categories, schedules, and notes you enter</li>
+      <li>Daily check-ins, streak history, completion timestamps</li>
+      <li>App preferences: theme, reminder times, notification settings</li>
+      <li>Premium / subscription entitlement flags (stored locally)</li>
+    </ul>
+
+    <h3>1b. Data we process when you use optional features</h3>
+    <ul>
+      <li><strong>AI Insights (Pro).</strong> When you request an AI insight, the App sends your habit names and recent completion history to our AI provider (via a Rork-hosted proxy) to generate the insight. The request is processed in memory and not retained for training. No account, email, or device identifier is sent.</li>
+      <li><strong>Cloud Sync (Pro, if enabled).</strong> When you enable cloud sync, your habit data is encrypted in transit (HTTPS) and stored on our backend so it can be restored on your other devices. You can disable sync and delete the cloud copy at any time from Settings.</li>
+      <li><strong>Export.</strong> When you export your data to CSV or JSON, the file is created on your device and shared via Android's share sheet. We do not receive a copy.</li>
+    </ul>
+
+    <h3>1c. Advertising (free tier only)</h3>
+    <p>If you use the free tier, Ember shows ads served by <strong>Google AdMob</strong> to keep the app free. To do this:</p>
+    <ul>
+      <li>AdMob may collect your advertising ID and other ad-related identifiers to serve and measure ads, per <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.</li>
+      <li>If you're in the EEA or UK, you'll see a consent prompt the first time you open the App, letting you choose whether ads are personalized.</li>
+      <li><strong>Ember Pro removes ads entirely</strong> — no ad SDK calls are made for Pro users.</li>
+    </ul>
+
+    <h3>1d. Data we do NOT collect</h3>
+    <ul>
+      <li>We do not collect your name, email address, phone number, or precise location.</li>
+      <li>We do not collect contacts, photos, microphone audio, or files outside the App.</li>
+      <li>We do not use third-party analytics SDKs.</li>
+      <li>We do not show ads to Ember Pro subscribers.</li>
+    </ul>
+
+    <h2 class="section">2. Purchases and subscriptions</h2>
+    <p>In-app purchases and subscriptions (weekly, monthly, yearly, and lifetime) are processed by <strong>Google Play Billing</strong>. We receive a purchase token from Google to verify your entitlement, but we do not receive your credit card or full payment details. Google's handling of payment data is governed by <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.</p>
+
+    <h2 class="section">3. Permissions we request</h2>
+    <ul>
+      <li><strong>POST_NOTIFICATIONS</strong> — to deliver habit reminders you schedule.</li>
+      <li><strong>INTERNET</strong> — only used for optional AI insights and cloud sync, and for Google Play Billing.</li>
+      <li><strong>RECEIVE_BOOT_COMPLETED / SCHEDULE_EXACT_ALARM</strong> (if applicable) — to re-schedule reminders after device restart.</li>
+    </ul>
+
+    <h2 class="section">4. Data retention and deletion</h2>
+    <ul>
+      <li>Local data lives on your device until you delete a habit, clear app data, or uninstall the App.</li>
+      <li>If you used cloud sync, you can delete your cloud copy from <strong>Settings → Manage Subscription / Account → Delete my data</strong>, or by emailing us at the address below.</li>
+    </ul>
+
+    <h2 class="section">5. Children</h2>
+    <p>Ember is not directed at children under 13. We do not knowingly collect data from children under 13.</p>
+
+    <h2 class="section">6. Security</h2>
+    <p>Network requests use HTTPS. Local data uses Android's standard app sandbox. No method of transmission or storage is 100% secure, but we use industry-standard practices.</p>
+
+    <h2 class="section">7. Changes to this policy</h2>
+    <p>If we make material changes, we'll update the "Last updated" date above and, where appropriate, surface a notice inside the App.</p>
+
+    <div class="contact">
+      <p style="margin: 0 0 6px; color: var(--text-muted); font-size: 13px;">Questions, data requests, or deletion requests</p>
+      <a href="mailto:support@ember.app">support@ember.app</a>
+    </div>
+
+    <footer>© 2026 Ember. All rights reserved.</footer>
+  </div>
+</body>
+</html>
