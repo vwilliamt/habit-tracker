@@ -1,5 +1,6 @@
 package com.rork.ember.ui.screens
 
+import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -60,6 +61,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -163,7 +165,13 @@ fun SettingsScreen(
                             }
                         } else "5 habits free · unlock everything",
                         tintAccent = true,
-                        onClick = { navController.navigate("paywall") },
+                        onClick = {
+                            if (state.isPremium) {
+                                viewModel.manageSubscription()
+                            } else {
+                                navController.navigate("paywall")
+                            }
+                        },
                     )
                     Divider()
                     SettingsRow(
@@ -182,7 +190,16 @@ fun SettingsScreen(
                         title = "Billing & receipts",
                         subtitle = "View invoices in the Play Store",
                         trailingIcon = Icons.AutoMirrored.Filled.OpenInNew,
-                        onClick = { toast = "Opens Play Store on real device" },
+                        onClick = {
+                            runCatching {
+                                context.startActivity(
+                                    Intent(
+                                        Intent.ACTION_VIEW,
+                                        "https://play.google.com/store/account/paymenthistory".toUri(),
+                                    )
+                                )
+                            }.onFailure { toast = "Could not open the Play Store" }
+                        },
                     )
                     if (state.isPremium && state.plan == PremiumPlan.YEARLY) {
                         Divider()
@@ -367,9 +384,9 @@ fun SettingsScreen(
                 CancelSheet(
                     onDismiss = { showCancelSheet = false },
                     onConfirm = {
-                        viewModel.cancelSubscription()
+                        viewModel.manageSubscription()
                         showCancelSheet = false
-                        toast = "Subscription canceled"
+                        toast = "Manage your plan in Google Play"
                     },
                 )
             }
@@ -810,7 +827,7 @@ private fun CancelSheet(onDismiss: () -> Unit, onConfirm: () -> Unit) {
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "You'll keep Pro access until the end of your billing period. After that, you'll lose unlimited habits, cloud sync, AI insights, themes, and widgets.",
+                    "Subscriptions are managed by Google Play. You'll be taken to Play, where you can cancel — you'll keep Pro access until the end of your billing period.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = EmberColors.TextSecondary,
                 )
@@ -826,7 +843,7 @@ private fun CancelSheet(onDismiss: () -> Unit, onConfirm: () -> Unit) {
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        "Cancel subscription",
+                        "Manage in Google Play",
                         style = MaterialTheme.typography.titleMedium,
                         color = EmberColors.Danger,
                         fontWeight = FontWeight.Bold,

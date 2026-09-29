@@ -2,6 +2,7 @@ package com.rork.ember.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -23,9 +24,10 @@ private val Context.premiumDataStore by preferencesDataStore(name = "ember_premi
 class PremiumRepository(private val context: Context) {
     private val planKey = stringPreferencesKey("plan_v1")
     private val purchasedAtKey = longPreferencesKey("purchased_at_v1")
+    private val sourceKey = stringPreferencesKey("source_v1")
 
     val state: Flow<PremiumState> = context.premiumDataStore.data
-        .catch { emit(androidx.datastore.preferences.core.emptyPreferences()) }
+        .catch { emit(emptyPreferences()) }
         .map { prefs ->
             val plan = runCatching {
                 prefs[planKey]?.let { PremiumPlan.valueOf(it) }
@@ -36,23 +38,43 @@ class PremiumRepository(private val context: Context) {
             )
         }
 
-    suspend fun purchase(plan: PremiumPlan) {
+    /**
+     * Records a Play-verified entitlement. Only call this with a purchase
+     * confirmed by [BillingRepository] — never from UI code.
+     */
+    suspend fun grant(plan: PremiumPlan, purchasedAt: Long = System.currentTimeMillis()) {
         context.premiumDataStore.edit { prefs ->
             prefs[planKey] = plan.name
-            prefs[purchasedAtKey] = System.currentTimeMillis()
+            prefs[purchasedAtKey] = purchasedAt
+            prefs[sourceKey] = SOURCE_PLAY
         }
     }
 
-    suspend fun restore(plan: PremiumPlan = PremiumPlan.LIFETIME) {
-        // Simulate a restore — treat as lifetime by default.
-        purchase(plan)
+    /**
+     * Removes the entitlement only if it was granted by Play billing.
+     * Legacy (locally simulated) entitlements are preserved — Play is
+     * authoritative only over purchases it actually made.
+     */
+    suspend fun clearIfPlayGranted() {
+        context.premiumDataStore.edit { prefs ->
+            if (prefs[sourceKey] == SOURCE_PLAY) {
+                prefs.remove(planKey)
+                prefs.remove(purchasedAtKey)
+                prefs.remove(sourceKey)
+            }
+        }
     }
 
     suspend fun clear() {
         context.premiumDataStore.edit { prefs ->
             prefs.remove(planKey)
             prefs.remove(purchasedAtKey)
+            prefs.remove(sourceKey)
         }
+    }
+
+    private companion object {
+        const val SOURCE_PLAY = "play"
     }
 }
 

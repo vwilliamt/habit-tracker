@@ -1,5 +1,6 @@
 package com.rork.ember.ui.screens
 
+import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -59,8 +60,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -95,11 +98,16 @@ fun PaywallScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val purchasing by viewModel.purchasing.collectAsStateWithLifecycle()
     val justPurchased by viewModel.justPurchased.collectAsStateWithLifecycle()
+    val yearlyPrice by viewModel.yearlyPrice.collectAsStateWithLifecycle()
+    val lifetimePrice by viewModel.lifetimePrice.collectAsStateWithLifecycle()
+    val message by viewModel.message.collectAsStateWithLifecycle()
+    val activity = LocalContext.current as? Activity
     var selected by remember { mutableStateOf(PremiumPlan.YEARLY) }
     val haptics = LocalHapticFeedback.current
 
     LaunchedEffect(justPurchased) {
         if (justPurchased) {
+            viewModel.clearMessage()
             kotlinx.coroutines.delay(1400)
             viewModel.acknowledgePurchase()
             navController.popBackStack()
@@ -207,7 +215,7 @@ fun PaywallScreen(
                 // Plans
                 PlanCard(
                     title = "Yearly",
-                    price = "$24.99",
+                    price = yearlyPrice ?: "$24.99",
                     cadence = "/year",
                     note = "Just $2.08/month · billed annually",
                     badge = "MOST POPULAR",
@@ -220,7 +228,7 @@ fun PaywallScreen(
                 Spacer(Modifier.height(12.dp))
                 PlanCard(
                     title = "Lifetime",
-                    price = "$29.99",
+                    price = lifetimePrice ?: "$29.99",
                     cadence = "once",
                     note = "Pay once · yours forever",
                     badge = "BEST VALUE",
@@ -237,16 +245,28 @@ fun PaywallScreen(
                 ContinueButton(
                     label = when {
                         state.isPremium -> "You're a member"
-                        selected == PremiumPlan.LIFETIME -> "Unlock forever — $29.99"
-                        else -> "Start — $24.99/year"
+                        selected == PremiumPlan.LIFETIME -> "Unlock forever — ${lifetimePrice ?: "$29.99"}"
+                        else -> "Start — ${yearlyPrice ?: "$24.99"}/year"
                     },
                     enabled = !purchasing && !state.isPremium,
                     loading = purchasing,
                     onClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        viewModel.purchase(selected)
+                        viewModel.purchase(selected, activity)
                     },
                 )
+
+                if (message != null) {
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        message ?: "",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = EmberColors.TextSecondary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
 
                 Spacer(Modifier.height(14.dp))
 

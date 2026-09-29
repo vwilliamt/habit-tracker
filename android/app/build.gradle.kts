@@ -67,5 +67,6 @@ dependencies {
     implementation(libs.coil.network.okhttp)
     implementation(libs.koin.androidx.compose)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.billing.ktx)
     debugImplementation(libs.androidx.ui.tooling)
 }
